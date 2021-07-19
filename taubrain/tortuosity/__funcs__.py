@@ -23,9 +23,11 @@ def tortuosity_geometric_streamline(streamline_points) -> float:
 
 
 def tortuosity_geometric(streamlines) -> float:
-    length_streamlines = len(streamlines)
-    tau_geometric = 0
-    for streamline in streamlines:
-        if streamline.shape[0] > 1:
-            tau_geometric += tortuosity_geometric_streamline(streamline)
-    return tau_geometric / length_streamlines
+    if len(streamlines) > 1:
+        length_streamlines = len(streamlines)
+        tau_geometric = 0
+        for streamline in streamlines:
+            if streamline.shape[0] > 1:
+                tau_geometric += tortuosity_geometric_streamline(streamline)
+        return tau_geometric / length_streamlines
+    return 0.0
