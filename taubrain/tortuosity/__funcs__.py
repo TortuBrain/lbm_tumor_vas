@@ -60,7 +60,14 @@ def tortuosity_geometric_streamline(streamline_points) -> float:
     return distance_points_array(streamline_points) / distance_across
 
 
-def tortuosity_geometric(streamlines) -> float:
+def _print_result_tau(value_tau) -> None:
+    """
+    Print the result of the geometric tortuosity
+    """
+    print(f'Results\n{"="*10}\ntortuosity:{value_tau}')
+
+
+def tortuosity_geometric(streamlines, output="steam_tg.csv") -> float:
     """
     Geometric tortuosity a list of streamlines.
     It is the average of the geometric tortuosity for each streamline
@@ -75,11 +82,19 @@ def tortuosity_geometric(streamlines) -> float:
     float
         Average geometric tortuosity of all streamlines
     """
-    if len(streamlines) > 1:
-        length_streamlines = len(streamlines)
+    file = open("steam_tg.csv", "w")
+    file.write("stream_length,tau \n")
+    length_streamlines = len(streamlines)
+    if length_streamlines > 1:
         tau_geometric = 0
+        number = 0
         for streamline in streamlines:
             if streamline.shape[0] > 1:
-                tau_geometric += tortuosity_geometric_streamline(streamline)
-        return tau_geometric / length_streamlines
+                tau = tortuosity_geometric_streamline(streamline)
+                tau_geometric += tau
+                file.write(f"{streamline.size/3},{tau} \n")
+                number += 1
+        tau_final = tau_geometric / length_streamlines
+        _print_result_tau(tau_final)
+        return tau_final
     return 0.0
