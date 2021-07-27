@@ -1,8 +1,9 @@
-# IMPORTS PACKAGES
 import numpy as np
+from scipy.spatial import distance
+import math
 
 
-def euclidian_distance_two_points(point_a, point_b) -> float:
+def euclidian_distance_two_points(point_a, point_b):
     """
     Find the Euclidean distance between two points
     d(x,y)lim_r->2(∑|x_k-y_k|^r)^(1/r)
@@ -17,11 +18,10 @@ def euclidian_distance_two_points(point_a, point_b) -> float:
     float
         The distance between two points
     """
-    distance = np.linalg.norm(point_a - point_b)
-    return distance
+    return distance.euclidean(point_a, point_b)
 
 
-def distance_points_array(points) -> float:
+def distance_points_array(points):
     """
     Euclidean distance between a list of points
     Parameters
@@ -38,10 +38,11 @@ def distance_points_array(points) -> float:
         distance += euclidian_distance_two_points(
             points[position_point], points[position_point + 1]
         )
+
     return distance
 
 
-def tortuosity_geometric_streamline(streamline_points) -> float:
+def tortuosity_geometric_streamline(streamline_points):
     """
     Geometric tortuosity of a streamline
         π=distance_points_array/distance_across
@@ -57,7 +58,10 @@ def tortuosity_geometric_streamline(streamline_points) -> float:
     distance_across = euclidian_distance_two_points(
         streamline_points[0], streamline_points[-1]
     )
-    return distance_points_array(streamline_points) / distance_across
+    tau = distance_points_array(streamline_points) * (1 / distance_across)
+    if tau <= 1.0:
+        tau = 1.0
+    return tau
 
 
 def _print_result_tau(value_tau) -> None:
@@ -98,3 +102,23 @@ def tortuosity_geometric(streamlines, output="steam_tg.csv") -> float:
         _print_result_tau(tau_final)
         return tau_final
     return 0.0
+
+
+def distance_points_backward_and_onward(points):
+    points_reverse = points[::-1]
+    number_section = math.floor(line1.shape[0] * 0.25)
+    onward = [
+        points[i : i + number_section] for i in range(0, len(points), number_section)
+    ]
+    backward = [
+        points_reverse[i : i + number_section]
+        for i in range(0, len(points_reverse), number_section)
+    ]
+    tau_onward = []
+    tau_backward = []
+
+    for stream in onward:
+        tau_onward.append(tortuosity_geometric_streamline(stream))
+    for stream in backward:
+        tau_backward.append(tortuosity_geometric_streamline(stream))
+    return tau_onward, tau_backward
