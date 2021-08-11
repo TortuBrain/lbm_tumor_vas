@@ -146,3 +146,10 @@ def tortuosity_geometric_track(streamlines) -> float:
         _print_result_tau(tau_final_mean, tau_final_backward, tau_final_onward)
         return tau_final_mean, tau_final_backward, tau_final_onward
     return 0.0
+
+
+#            __
+#           / _)
+#    .-^^^-/ /
+# __/       /
+# <__.|_|-|_| -> octajos
