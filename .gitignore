@@ -1,2 +1,3 @@
 .pytest_cache
 .taubrain.egg-info
+.DS_Store

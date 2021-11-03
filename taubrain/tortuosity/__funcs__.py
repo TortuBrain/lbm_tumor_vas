@@ -1,8 +1,11 @@
-import numpy as np
 from scipy.spatial import distance
-from tabulate import tabulate
-import math
-
+from nibabel.streamlines.array_sequence import ArraySequence
+from scipy.spatial import distance
+from math import sqrt
+from numba.core.decorators import njit
+import taubrain as tb
+from numba import jit
+import numpy as np
 
 def euclidian_distance_two_points(point_a, point_b):
     """
@@ -22,132 +25,61 @@ def euclidian_distance_two_points(point_a, point_b):
     return distance.euclidean(point_a, point_b)
 
 
-def distance_points_array(points):
+@jit(nopython=True)
+def find(x, y, p):
+	mind = 0
+	for i in range(len(p)):
+		a = p[i][0]
+		b = p[i][1]
+		mind += sqrt((x - a) * (x - a) +
+					(y - b) * (y - b))			
+	return mind
+
+@jit(nopython=True)
+def euclidian_distance_array_points(p):
+	x = 0
+	y = 0
+	
+	for i in range(len(p)):
+		x += p[i][0]
+		y += p[i][1]
+	x = x // len(p)
+	y = y // len(p)
+	mind = find(x, y, p)
+
+	return mind
+
+def tortuosity_array_points(points):
+    array_euclian_distance = []
+    for i in range(len(points)-1):
+        distance_euclidian_L = euclidian_distance_two_points(points[0], points[i+1])
+        tortuosity_in_point=euclidian_distance_array_points(points[0:i+1])/distance_euclidian_L
+        if (tortuosity_in_point > 0):
+            array_euclian_distance.append(tortuosity_in_point)
+        else:
+         array_euclian_distance.append(1.0000000)
+        
+    return np.array(array_euclian_distance)
+        
+
+
+def stream_tortuosity(streamlines):
+
     """
-    Euclidean distance between a list of points
+    Calculate the tortuosity of a streamline
     Parameters
     ----------
-    points : array
-        A list of points in 3D
+    streamline : list
+        The streamline
     Returns
     -------
-    float
-        The distance between all points in the array
+    array
+        The tortuosity of the streamline
     """
-    distance = 0
-    for position_point in range(len(points) - 1):
-        distance += euclidian_distance_two_points(
-            points[position_point], points[position_point + 1]
-        )
-
-    return distance
-
-
-def tortuosity_geometric_streamline(streamline_points):
-    """
-    Geometric tortuosity of a streamline
-        π=distance_points_array/distance_across
-    Parameters
-    ----------
-    streamline_points : array
-        A array of points belonging to a streamline
-    Returns
-    -------
-    float
-        Geometric tortuosity of a streamline
-    """
-
-    if streamline_points.shape[0] == 1:
-        return 1.00
-    distance_across = euclidian_distance_two_points(
-        streamline_points[0], streamline_points[-1]
-    )
-    line = distance_points_array(streamline_points)
-
-    tau = line * (1 / distance_across)
-
-    if tau <= 1.0:
-        tau = 1.0
-    return tau
-
-
-def _print_result_tau(tau_final, tau_final_backward, tau_final_onward) -> None:
-    """
-    Print the result of the geometric tortuosity
-    """
-
-    table = [
-        ["Tortuosity Mean", tau_final],
-        ["Tortuosity Backward", tau_final_backward],
-        ["Tortuosity Onward", tau_final_onward],
-    ]
-    print(tabulate(table, headers=["\033[1mProperties", "\033[1mResult\033[0m"]))
-
-
-def distance_points_backward_and_onward(points):
-    points_reverse = points[::-1]
-    number_section = math.floor(points.shape[0] * 0.25)
-    tau_onward = []
-    tau_backward = []
-    if number_section >= 1:
-        onward = [
-            points[i : i + number_section]
-            for i in range(0, len(points), number_section)
-        ]
-        backward = [
-            points_reverse[i : i + number_section]
-            for i in range(0, len(points_reverse), number_section)
-        ]
-        for stream in onward:
-            tau_onward.append(tortuosity_geometric_streamline(stream))
-        for stream in backward:
-            tau_backward.append(tortuosity_geometric_streamline(stream))
-        final = np.array(tau_onward) + np.array(tau_backward)
-        return final / 2, np.array(tau_onward), np.array(tau_backward)
-    return np.array([1.00])
-
-
-def tortuosity_geometric_track(streamlines) -> float:
-    """
-    Geometric tortuosity a list of streamlines.
-    It is the average of the geometric tortuosity for each streamline
-        π=∑tortuosity_geometric_streamline_i/lenght(streamlines)
-
-    Parameters
-    ----------
-
-    streamlines : array
-        A list of streamlines
-    Returns
-    -------
-    float
-        Average geometric tortuosity of all streamlines
-    """
-    tau_geometric_mean = 0
-    tau_geometric_backward = 0
-    tau_geometric_onward = 0
-    length_streamlines = len(streamlines)
-    if length_streamlines > 1:
-        tau_geometric = 0
-        for stream in streamlines:
-            if stream.shape[0] >= 2:
-                tau = distance_points_backward_and_onward(stream)
-                if len(tau) == 3:
-                    tau_geometric_mean += tau[0].mean()
-                    tau_geometric_backward += tau[1].mean()
-                    tau_geometric_onward += tau[2].mean()
-                else:
-                    length_streamlines -= 1
-            else:
-                length_streamlines -= 1
-        tau_final_mean = tau_geometric_mean / length_streamlines
-        tau_final_backward = tau_geometric_backward / length_streamlines
-        tau_final_onward = tau_geometric_backward / length_streamlines
-        _print_result_tau(tau_final_mean, tau_final_backward, tau_final_onward)
-        return tau_final_mean, tau_final_backward, tau_final_onward
-    return 0.0
-
-
+    tortuosity_streamline= ArraySequence()
+    for streamline in streamlines:
+        tortuosity_streamline.append(tortuosity_array_points((streamline)))
+    return tortuosity_streamline
 #            __
 #           / _)
 #    .-^^^-/ /
