@@ -53,7 +53,7 @@ def _normalize_streamlines(streamlines,sum_array):
 
 def normalize_streamlines(streamlines)->ArraySequence:
     sum_array=_get_max_point_and_min_point(streamlines)[0]
-    return _normalize_streamlines(streamlines,_get_max_point_and_min_point(streamlines)[1])
+    return _normalize_streamlines(streamlines,sum_array)
 
 def plot_streamlines(streamlines,color='black'):
     fig = plt.figure(figsize=(4,4))
@@ -64,7 +64,7 @@ def plot_streamlines(streamlines,color='black'):
         plt.show()
 
 #            __
-#           / _)
+#           / _) 
 #    .-^^^-/ /
 # __/       /
 # <__.|_|-|_| -> octajos
